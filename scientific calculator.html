@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Calculator</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --text-color: #ecf0f1;
+            --button-bg: #34495e;
+            --button-hover: #2c3e50;
+            --display-bg: #1a252f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a2a3a, #2c3e50);
+            color: var(--text-color);
+        }
+
+        .calculator {
+            width: 320px;
+            background-color: var(--secondary-color);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            margin: 20px;
+        }
+
+        .display {
+            padding: 20px;
+            text-align: right;
+            background-color: var(--display-bg);
+            position: relative;
+        }
+
+        .previous-operand {
+            font-size: 1.2rem;
+            color: rgba(236, 240, 241, 0.7);
+            height: 24px;
+            overflow: hidden;
+        }
+
+        .current-operand {
+            font-size: 2.5rem;
+            margin-top: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .error-message {
+            position: absolute;
+            bottom: 5px;
+            left: 20px;
+            color: var(--accent-color);
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        button {
+            border: none;
+            outline: none;
+            padding: 20px 0;
+            font-size: 1.2rem;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--button-hover);
+            transform: scale(1.02);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .operation {
+            background-color: var(--primary-color);
+        }
+
+        .operation:hover {
+            background-color: #2980b9;
+        }
+
+        .scientific {
+            background-color: #8e44ad;
+        }
+
+        .scientific:hover {
+            background-color: #7d3c98;
+        }
+
+        .equals {
+            background-color: var(--accent-color);
+        }
+
+        .equals:hover {
+            background-color: #c0392b;
+        }
+
+        @media (max-width: 400px) {
+            .calculator {
+                width: 100%;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div class="previous-operand" id="previous-operand"></div>
+            <div class="current-operand" id="current-operand">0</div>
+            <div class="error-message" id="error-message"></div>
+        </div>
+        <div class="buttons">
+            <button class="scientific" onclick="calculateFunction('Math.sin(')">sin</button>
+            <button class="scientific" onclick="calculateFunction('Math.cos(')">cos</button>
+            <button class="scientific" onclick="calculateFunction('Math.tan(')">tan</button>
+            <button class="operation" onclick="clearAll()">AC</button>
+            <button class="operation" onclick="deleteLastChar()">DEL</button>
+            
+            <button class="scientific" onclick="calculateFunction('Math.log(')">log</button>
+            <button class="scientific" onclick="calculateFunction('Math.log10(')">log10</button>
+            <button class="scientific" onclick="appendToDisplay('Math.PI')">π</button>
+            <button class="operation" onclick="appendToDisplay('/')">÷</button>
+            <button class="operation" onclick="appendToDisplay('*')">×</button>
+            
+            <button class="scientific" onclick="appendToDisplay('Math.pow(7,')">x^y</button>
+            <button class="scientific" onclick="calculateFunction('Math.sqrt(')">√</button>
+            <button onclick="appendToDisplay('7')">7</button>
+            <button onclick="appendToDisplay('8')">8</button>
+            <button onclick="appendToDisplay('9')">9</button>
+            
+            <button class="scientific" onclick="appendToDisplay('(')">(</button>
+            <button class="scientific" onclick="appendToDisplay(')')">)</button>
+            <button onclick="appendToDisplay('4')">4</button>
+            <button onclick="appendToDisplay('5')">5</button>
+            <button onclick="appendToDisplay('6')">6</button>
+            
+            <button class="scientific" onclick="appendToDisplay('**2')">x²</button>
+            <button class="scientific" onclick="appendToDisplay('**3')">x³</button>
+            <button onclick="appendToDisplay('1')">1</button>
+            <button onclick="appendToDisplay('2')">2</button>
+            <button onclick="appendToDisplay('3')">3</button>
+            
+            <button class="scientific" onclick="appendToDisplay('**')">^</button>
+            <button class="scientific" onclick="appendToDisplay('1/')">1/x</button>
+            <button onclick="appendToDisplay('0')">0</button>
+            <button onclick="appendToDisplay('.')">.</button>
+            <button class="operation" onclick="appendToDisplay('-')">-</button>
+            
+            <button class="operation span-2" onclick="appendToDisplay('+')">+</button>
+            <button class="equals span-3" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        const currentOperandElement = document.getElementById('current-operand');
+        const previousOperandElement = document.getElementById('previous-operand');
+        const errorMessageElement = document.getElementById('error-message');
+        
+        let currentOperand = '0';
+        let previousOperand = '';
+        let operation = undefined;
+        let resetScreen = false;
+
+        function updateDisplay() {
+            currentOperandElement.innerText = currentOperand;
+            previousOperandElement.innerText = previousOperand;
+            errorMessageElement.style.display = 'none';
+        }
+
+        function appendToDisplay(number) {
+            if (currentOperand === '0' || resetScreen) {
+                currentOperand = '';
+                resetScreen = false;
+            }
+            
+            // Handle special cases for functions
+            if (number === 'Math.PI') {
+                currentOperand = Math.PI.toString();
+            } else if (number === '**2') {
+                currentOperand = `Math.pow(${currentOperand},2)`;
+                calculate();
+                return;
+            } else if (number === '**3') {
+                currentOperand = `Math.pow(${currentOperand},3)`;
+                calculate();
+                return;
+            } else if (number === '1/') {
+                currentOperand = `1/${currentOperand}`;
+                calculate();
+                return;
+            } else {
+                currentOperand += number;
+            }
+            
+            updateDisplay();
+        }
+
+        function calculateFunction(func) {
+            currentOperand = `${func}${currentOperand})`;
+            calculate();
+        }
+
+        function clearAll() {
+            currentOperand = '0';
+            previousOperand = '';
+            operation = undefined;
+            updateDisplay();
+        }
+
+        function deleteLastChar() {
+            if (currentOperand.length === 1) {
+                currentOperand = '0';
+            } else {
+                currentOperand = currentOperand.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function calculate() {
+            let computation;
+            try {
+                // Replace × with * for evaluation
+                let expression = currentOperand.replace(/×/g, '*');
+                
+                // Handle cases where the expression ends with an operator
+                if (/[+\-*/^]$/.test(expression)) {
+                    throw new Error('Incomplete expression');
+                }
+                
+                computation = eval(expression);
+                
+                if (isNaN(computation) || !isFinite(computation)) {
+                    throw new Error('Invalid calculation');
+                }
+                
+                previousOperand = currentOperand;
+                currentOperand = computation.toString();
+                resetScreen = true;
+                errorMessageElement.style.display = 'none';
+            } catch (error) {
+                errorMessageElement.innerText = error.message === 'Invalid calculation' ? 
+                    (currentOperand.includes('/0') ? 'Cannot divide by zero' : 'Invalid input') : 
+                    error.message;
+                errorMessageElement.style.display = 'block';
+                currentOperand = '0';
+                resetScreen = true;
+            }
+            updateDisplay();
+        }
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>
